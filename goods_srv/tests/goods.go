@@ -26,11 +26,11 @@ func TestGetBrandList() {
 
 func TestGoodsList() {
 	rsp, err := brandClient.GoodsList(context.Background(), &proto.GoodsFilterRequest{
-		PriceMin:10,
-		PriceMax:30,
-		Pages: 1,
+		PriceMin:    10,
+		PriceMax:    30,
+		Pages:       1,
 		PagePerNums: 8,
-		KeyWords:"苹果",
+		KeyWords:    "苹果",
 		TopCategory: 130358,
 	})
 	if err != nil {
@@ -52,6 +52,27 @@ func TestGetAllCategoryList() {
 	fmt.Println(rsp.JsonData)
 }
 
+func TestBatchGetGoods() {
+	rsp, err := brandClient.BatchGetGoods(context.Background(), &proto.BatchGoodsIdInfo{
+		Id: []int32{421, 422, 423},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(rsp.Total)
+	fmt.Println(rsp.Data)
+}
+
+func TestGetGoodsDetail() {
+	rsp, err := brandClient.GetGoodsDetail(context.Background(), &proto.GoodInfoRequest{
+		Id: 421,
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(rsp.Name)
+}
+
 func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
@@ -65,7 +86,9 @@ func main() {
 	Init()
 	//TestGetBrandList()
 	//TestGetAllCategoryList()
-	TestGoodsList()
+	//TestGoodsList()
+	//TestBatchGetGoods()
+	TestGetGoodsDetail()
 
 	conn.Close()
 }

@@ -3,8 +3,10 @@ package handler
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"mxshop_srvs/goods_srv/global"
 	"mxshop_srvs/goods_srv/model"
 	"mxshop_srvs/goods_srv/proto"
@@ -121,4 +123,71 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 	//}
 	//用提取出的category_id 去goods中查询商品
 
+}
+func (s *GoodsServer) BatchGetGoods(ctx context.Context, req *proto.BatchGoodsIdInfo) (*proto.GoodsListResponse, error) {
+	var goods []model.Goods
+	result := global.DB.Where("id IN ?", req.Id).Preload("Category").Preload("Brands").Find(&goods)
+	//result := global.DB.Find(&goods,req.Id) （根据主键查询）
+	var goodsListResponse proto.GoodsListResponse
+	goodsListResponse.Total = int32(result.RowsAffected)
+	for _, good := range goods {
+		goodsInfoResponse := modelToGoodsResponse(good)
+		goodsListResponse.Data = append(goodsListResponse.Data, &goodsInfoResponse)
+	}
+	return &goodsListResponse, nil
+}
+func (s *GoodsServer) CreateGoods(ctx context.Context, req *proto.CreateGoodsInfo) (*proto.GoodsInfoResponse, error) {
+	var good model.Goods
+	good.Name = req.Name
+	good.GoodsSn = req.GoodsSn
+	good.MarketPrice = req.MarketPrice
+	good.ShopPrice = req.ShopPrice
+	good.GoodsBrief = req.GoodsBrief
+	good.ShipFree = req.ShipFree
+	good.Images = req.Images
+	good.DescImages = req.DescImages
+	good.GoodsFrontImage = req.GoodsFrontImage
+	good.IsNew = req.IsNew
+	good.IsHot = req.IsHot
+	good.OnSale = req.OnSale
+	good.CategoryID = req.CategoryId
+	good.BrandsID = req.BrandId
+	global.DB.Create(&good)
+	goodsInfoResponse := modelToGoodsResponse(good)
+	return &goodsInfoResponse, nil
+}
+func (s *GoodsServer) DeleteGoods(ctx context.Context, req *proto.DeleteGoodsInfo) (*emptypb.Empty, error) {
+	var good model.Goods
+	if result := global.DB.First(&good, req.Id); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "商品不存在")
+	}
+	global.DB.Delete(&model.Goods{}, req.Id)
+	return &empty.Empty{}, nil
+}
+func (s *GoodsServer) UpdateGoods(ctx context.Context, req *proto.CreateGoodsInfo) (*emptypb.Empty, error) {
+	var good model.Goods
+	good.Name = req.Name
+	good.GoodsSn = req.GoodsSn
+	good.MarketPrice = req.MarketPrice
+	good.ShopPrice = req.ShopPrice
+	good.GoodsBrief = req.GoodsBrief
+	good.ShipFree = req.ShipFree
+	good.Images = req.Images
+	good.DescImages = req.DescImages
+	good.GoodsFrontImage = req.GoodsFrontImage
+	good.IsNew = req.IsNew
+	good.IsHot = req.IsHot
+	good.OnSale = req.OnSale
+	good.CategoryID = req.CategoryId
+	good.BrandsID = req.BrandId
+	global.DB.Save(&good)
+	return &empty.Empty{}, nil
+}
+func (s *GoodsServer) GetGoodsDetail(ctx context.Context, req *proto.GoodInfoRequest) (*proto.GoodsInfoResponse, error) {
+	var good model.Goods
+	if result := global.DB.Preload("Category").Preload("Brands").First(&good, req.Id); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "商品不存在")
+	}
+	goodsInfoResponse := modelToGoodsResponse(good)
+	return &goodsInfoResponse, nil
 }
