@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 	zap.S().Info("ip:", *IP)
 	//获取空闲的端口号
-	if *Port == 0{
+	if *Port == 0 {
 		*Port, _ = utils.GetFreePort()
 	}
 	zap.S().Info("port:", *Port)
@@ -46,8 +46,6 @@ func main() {
 		panic("fail to listen:" + err.Error())
 	}
 
-
-
 	//服务注册
 	cfg := api.DefaultConfig()
 	cfg.Address = fmt.Sprintf("%s:%d",
@@ -56,12 +54,11 @@ func main() {
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		panic(err)
-
 	}
 
 	// 生成对应的检查对象
 	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("%s:%d",global.ServerConfig.Host, *Port),
+		GRPC:                           fmt.Sprintf("%s:%d", global.ServerConfig.Host, *Port),
 		Timeout:                        "5s",
 		Interval:                       "5s",
 		DeregisterCriticalServiceAfter: "10s",

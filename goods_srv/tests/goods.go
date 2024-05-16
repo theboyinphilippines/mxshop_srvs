@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
-
 	"google.golang.org/grpc"
-
 	"mxshop_srvs/goods_srv/proto"
 )
 
@@ -72,6 +70,18 @@ func TestGetGoodsDetail() {
 	}
 	fmt.Println(rsp.Name)
 }
+func TestUpdateGoods() {
+	_, err := brandClient.UpdateGoods(context.Background(), &proto.CreateGoodsInfo{
+		Id:         845,
+		CategoryId: 225638,
+		BrandId:    618,
+		Name:       "百香果1",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+}
 
 func Init() {
 	var err error
@@ -88,7 +98,7 @@ func main() {
 	//TestGetAllCategoryList()
 	//TestGoodsList()
 	//TestBatchGetGoods()
-	TestGetGoodsDetail()
-
+	//TestGetGoodsDetail()
+	TestUpdateGoods()
 	conn.Close()
 }

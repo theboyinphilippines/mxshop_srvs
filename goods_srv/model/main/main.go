@@ -47,9 +47,8 @@ func main() {
 	// 设置全局logger,打印sql语句
 
 	//迁移schema
-	_ = db.AutoMigrate(&model.Category{},model.Brand{},
-	model.Goods{},model.GoodsCategoryBrand{},model.Banner{})
-
+	_ = db.AutoMigrate(&model.Category{}, model.Goods{},
+		model.Goods{}, model.GoodsCategoryBrand{}, model.Banner{})
 
 	//fmt.Println(genMd5("123456"))
 

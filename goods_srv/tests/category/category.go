@@ -52,11 +52,11 @@ func TestDeleteCategory() {
 
 func TestUpdateCategory() {
 	_, err := brandClient.UpdateCategory(context.Background(), &proto.CategoryInfoRequest{
-		Id: 238009,
-		Name: "二颗莓",
+		Id:             238009,
+		Name:           "二颗莓",
 		ParentCategory: 135487,
-		Level: 3,
-		IsTab: false,
+		Level:          3,
+		IsTab:          false,
 	})
 	if err != nil {
 		panic(err)
@@ -65,14 +65,14 @@ func TestUpdateCategory() {
 
 func TestCategoryBrandList() {
 	_, err := brandClient.CategoryBrandList(context.Background(), &proto.CategoryBrandFilterRequest{
-	Pages: 1,
-	PagePerNums: 10,
+		Pages:       1,
+		PagePerNums: 10,
 	})
 	if err != nil {
 		panic(err)
 	}
 }
-func TestGetCategoryBrandList(){
+func TestGetCategoryBrandList() {
 	rsp, err := brandClient.GetCategoryBrandList(context.Background(), &proto.CategoryInfoRequest{
 		Id: 130368,
 	})

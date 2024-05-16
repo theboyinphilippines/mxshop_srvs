@@ -166,6 +166,18 @@ func (s *GoodsServer) DeleteGoods(ctx context.Context, req *proto.DeleteGoodsInf
 }
 func (s *GoodsServer) UpdateGoods(ctx context.Context, req *proto.CreateGoodsInfo) (*emptypb.Empty, error) {
 	var good model.Goods
+	if result := global.DB.First(&good, req.Id); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "商品不存在")
+	}
+	var category model.Category
+	if result := global.DB.First(&category, req.CategoryId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "商品分类不存在")
+	}
+	var brand model.Brands
+	if result := global.DB.First(&brand, req.BrandId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "品牌不存在")
+	}
+
 	good.Name = req.Name
 	good.GoodsSn = req.GoodsSn
 	good.MarketPrice = req.MarketPrice
