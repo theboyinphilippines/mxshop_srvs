@@ -23,7 +23,7 @@ import (
 func main() {
 	// 命令行输入ip port来启动
 	IP := flag.String("ip", "0.0.0.0", "ip地址")
-	Port := flag.Int("port", 50051, "端口号")
+	Port := flag.Int("port", 50052, "端口号")
 
 	// 初始化
 	initialize.InitLogger()
@@ -45,6 +45,8 @@ func main() {
 	if err != nil {
 		panic("fail to listen:" + err.Error())
 	}
+	// 将grpc服务 注册健康检查
+	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 
 	//服务注册
 	cfg := api.DefaultConfig()
@@ -78,8 +80,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// 将grpc服务 注册健康检查
-	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 
 	go func() {
 		err = server.Serve(lis)
