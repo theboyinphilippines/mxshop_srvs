@@ -1,0 +1,19 @@
+#name:
+#  user-srv
+#
+#mysql:
+#  host: 192.168.1.101
+#  port: 3306
+#  user: root
+#  password: 1234qwer!
+#  db: mxshop_inventory_srv
+#
+#consul:
+#  host: 192.168.1.101
+#  port: 8500
+
+host: 192.168.0.101
+port: 8848
+namespaceId: 32c5d271-1da5-4be7-833b-3c8552c3ea03
+dataId: inventory-srv.json
+group: dev
