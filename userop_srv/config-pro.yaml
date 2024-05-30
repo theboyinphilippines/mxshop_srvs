@@ -1,0 +1,5 @@
+host: 192.168.0.101
+port: 8848
+namespaceId: b108abeb-b7e7-4599-9c4d-b050dd729979
+dataId: userop-srv.json
+group: pro

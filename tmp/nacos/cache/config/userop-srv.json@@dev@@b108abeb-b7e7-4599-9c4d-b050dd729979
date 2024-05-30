@@ -1,13 +1,13 @@
 {
-  "name": "goods-srv",
+  "name": "userop-srv",
   "host":"192.168.0.101",
-  "tags":["imooc", "shy", "goods", "srv"],
+  "tags":["imooc", "shy", "userop", "srv"],
   "mysql": {
     "host": "192.168.0.101",
     "port": 3306,
     "user": "root",
     "password": "1234qwer!",
-    "db": "mxshop_goods_srv"
+    "db": "mxshop_userop_srv"
   },
   "consul": {
     "host": "192.168.0.101",
