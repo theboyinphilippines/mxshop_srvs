@@ -2,8 +2,10 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/olivere/elastic/v7"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -12,6 +14,7 @@ import (
 	"mxshop_srvs/goods_srv/proto"
 )
 
+// 商品列表中涉及es搜索，增删改商品，需要增加es操作
 type GoodsServer struct {
 	proto.UnimplementedGoodsServer
 }
@@ -50,33 +53,43 @@ func modelToGoodsResponse(good model.Goods) proto.GoodsInfoResponse {
 
 //商品列表(通过点击一二三级类目去查询出商品)
 func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterRequest) (*proto.GoodsListResponse, error) {
+	//使用es的目的是搜索出商品的id来，通过id拿到具体的字段信息是通过mysql来完成
+	//我们使用es是用来做搜索的， 是否应该将所有的mysql字段全部在es中保存一份
+	//es用来做搜索，这个时候我们一般只把搜索和过滤的字段信息保存到es中
+	//es可以用来当做mysql使用， 但是实际上mysql和es之间是互补的关系， 一般mysql用来做存储使用，es用来做搜索使用
+	//es想要提高性能， 就要将es的内存设置的够大， 或写入少点字段1k 2k
+
 	var goodsListResponse proto.GoodsListResponse
 	// 条件搜索
 	var goods []model.Goods
 	//这里全局变量db要换成局部变量 拼凑sql语句
 	localDB := global.DB.Model(&model.Goods{})
-	if req.PriceMin > 0 {
-		localDB = localDB.Where("shop_price >= ?", req.PriceMin)
-	}
-	if req.PriceMax > 0 {
-		localDB = localDB.Where("shop_price <= ?", req.PriceMax)
+	// 定义es复合查询 bool查询
+	q := elastic.NewBoolQuery()
+	if req.KeyWords != "" {
+		//localDB = localDB.Where("name LIKE ?", "%"+req.KeyWords+"%")
+		q = q.Must(elastic.NewMultiMatchQuery(req.KeyWords, "name", "goods_brief"))
 	}
 	// IsHot IsNew 默认为false
 	if req.IsHot {
-		localDB = localDB.Where(&model.Goods{IsHot: req.IsHot})
+		//localDB = localDB.Where(&model.Goods{IsHot: req.IsHot})
+		q = q.Filter(elastic.NewTermQuery("is_hot", req.IsHot))
 	}
-
 	if req.IsNew {
-		localDB = localDB.Where(&model.Goods{IsNew: req.IsNew})
+		//localDB = localDB.Where(&model.Goods{IsNew: req.IsNew})
+		q = q.Filter(elastic.NewTermQuery("is_new", req.IsHot))
 	}
-	if req.IsHot {
-		localDB = localDB.Where(&model.Goods{IsNew: req.IsNew})
+	if req.PriceMin > 0 {
+		//localDB = localDB.Where("shop_price >= ?", req.PriceMin)
+		q = q.Filter(elastic.NewRangeQuery("shop_price").Gte(req.PriceMin))
 	}
-	if req.KeyWords != "" {
-		localDB = localDB.Where("name LIKE ?", "%"+req.KeyWords+"%")
+	if req.PriceMax > 0 {
+		//localDB = localDB.Where("shop_price <= ?", req.PriceMax)
+		q = q.Filter(elastic.NewRangeQuery("shop_price").Lte(req.PriceMax))
 	}
 	if req.Brand > 0 {
-		localDB = localDB.Where(&model.Goods{BrandsID: req.Brand})
+		//localDB = localDB.Where(&model.Goods{BrandsID: req.Brand})
+		q = q.Filter(elastic.NewTermQuery("brands_id", req.Brand))
 	}
 	subQuery := ""
 	if req.TopCategory > 0 {
@@ -96,12 +109,54 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 			//localDB = localDB.Where(&model.Goods{CategoryID: category.ID}).Find(&goods)
 			subQuery = fmt.Sprintf("select id from category where id = %d", req.TopCategory)
 		}
-		localDB = localDB.Where(fmt.Sprintf("category_id IN (%s)", subQuery)).Find(&goods)
-		var total int64
-		localDB.Count(&total)
-		goodsListResponse.Total = int32(total)
-		localDB.Preload("Category").Preload("Brands").Where(fmt.Sprintf("category_id IN (%s)", subQuery)).Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&goods)
+		//localDB = localDB.Where(fmt.Sprintf("category_id IN (%s)", subQuery)).Find(&goods)
+		//var total int64
+		//localDB.Count(&total)
+		//goodsListResponse.Total = int32(total)
+
+		//去数据库中查询出category ids
+		categoryIds := make([]interface{}, 0)
+		type Result struct {
+			ID int32
+		}
+		var result []Result
+		global.DB.Model(model.Category{}).Raw(subQuery).Scan(&result)
+		for _, r := range result {
+			categoryIds = append(categoryIds, r.ID)
+		}
+		// 生成满足categoryIds的匹配条件（切片传入多个值，用terms）
+		q = q.Filter(elastic.NewTermsQuery("category_id", categoryIds...))
 	}
+
+	//用category ids去es中查询出goods，取出goods ids
+	//分页
+	if req.Pages == 0 {
+		req.Pages = 1
+	}
+
+	switch {
+	case req.PagePerNums > 100:
+		req.PagePerNums = 100
+	case req.PagePerNums <= 0:
+		req.PagePerNums = 10
+	}
+	rsp, err := global.EsClient.Search().Index(model.EsGoods{}.GetIndexName()).Query(q).From(int(req.Pages)).Size(int(req.PagePerNums)).Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	goodsListResponse.Total = int32(rsp.Hits.TotalHits.Value)
+
+	goodsIds := make([]int32, 0)
+	for _, value := range rsp.Hits.Hits {
+		var esGoods model.EsGoods
+		_ = json.Unmarshal(value.Source, &esGoods)
+		goodsIds = append(goodsIds, esGoods.ID)
+	}
+
+	// 用goods ids 去数据库中查询出goods list
+	//localDB.Preload("Category").Preload("Brands").Where(fmt.Sprintf("category_id IN (%s)", subQuery)).Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&goods)
+	localDB.Preload("Category").Preload("Brands").Find(&goods, goodsIds)
+
 	var goodsInfoResponse []*proto.GoodsInfoResponse
 	for _, good := range goods {
 		goodResponse := modelToGoodsResponse(good)
@@ -152,7 +207,16 @@ func (s *GoodsServer) CreateGoods(ctx context.Context, req *proto.CreateGoodsInf
 	good.OnSale = req.OnSale
 	good.CategoryID = req.CategoryId
 	good.BrandsID = req.BrandId
-	global.DB.Create(&good)
+
+	//mysql保存商品时，需要将商品保存到es，为了耦合性（方便使用和删除es功能），这里用gorm的钩子，方便
+	//用事务来保持mysql，es的数据保存
+	tx := global.DB.Begin()
+	result := tx.Create(&good)
+	if result.Error != nil {
+		tx.Rollback()
+		return nil, result.Error
+	}
+	tx.Commit()
 	goodsInfoResponse := modelToGoodsResponse(good)
 	return &goodsInfoResponse, nil
 }
@@ -161,7 +225,13 @@ func (s *GoodsServer) DeleteGoods(ctx context.Context, req *proto.DeleteGoodsInf
 	if result := global.DB.First(&good, req.Id); result.RowsAffected == 0 {
 		return nil, status.Errorf(codes.NotFound, "商品不存在")
 	}
-	global.DB.Delete(&model.Goods{}, req.Id)
+	tx := global.DB.Begin()
+	result := global.DB.Delete(&model.Goods{BaseModel: model.BaseModel{ID: req.Id}})
+	if result.Error != nil {
+		tx.Rollback()
+		return nil, result.Error
+	}
+	tx.Commit()
 	return &empty.Empty{}, nil
 }
 func (s *GoodsServer) UpdateGoods(ctx context.Context, req *proto.CreateGoodsInfo) (*emptypb.Empty, error) {
@@ -192,7 +262,14 @@ func (s *GoodsServer) UpdateGoods(ctx context.Context, req *proto.CreateGoodsInf
 	good.OnSale = req.OnSale
 	good.CategoryID = req.CategoryId
 	good.BrandsID = req.BrandId
-	global.DB.Save(&good)
+
+	tx := global.DB.Begin()
+	result := global.DB.Save(&good)
+	if result.Error != nil {
+		tx.Rollback()
+		return nil, result.Error
+	}
+	tx.Commit()
 	return &empty.Empty{}, nil
 }
 func (s *GoodsServer) GetGoodsDetail(ctx context.Context, req *proto.GoodInfoRequest) (*proto.GoodsInfoResponse, error) {

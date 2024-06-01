@@ -72,20 +72,49 @@ func TestGetGoodsDetail() {
 }
 func TestUpdateGoods() {
 	_, err := brandClient.UpdateGoods(context.Background(), &proto.CreateGoodsInfo{
-		Id:         845,
-		CategoryId: 225638,
-		BrandId:    618,
-		Name:       "百香果1",
+		Id:         847,
+		CategoryId: 130358,
+		BrandId:    614,
+		Name:       "七七牌榴莲",
+		GoodsBrief: "是在太好吃的东南亚进口好榴莲",
 	})
 	if err != nil {
 		panic(err)
 	}
+}
 
+func TestDeleteGoods() {
+	_, err := brandClient.DeleteGoods(context.Background(), &proto.DeleteGoodsInfo{Id: 847})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestCreateGoods() {
+	_, err := brandClient.CreateGoods(context.Background(), &proto.CreateGoodsInfo{
+		Name:            "妈妈们",
+		GoodsSn:         "sdsd",
+		MarketPrice:     27.54,
+		ShopPrice:       25.24,
+		GoodsBrief:      "嘻嘻嘻嘻",
+		ShipFree:        false,
+		Images:          []string{"http://www.amazon.com/iamges/01.jpg", "http://www.amazon.com/iamges/02.jpg"},
+		DescImages:      []string{"http://www.amazon.com/iamges/01.jpg", "http://www.amazon.com/iamges/02.jpg"},
+		GoodsFrontImage: "http://www.amazon.com/iamges",
+		IsNew:           false,
+		IsHot:           false,
+		OnSale:          false,
+		CategoryId:      130358,
+		BrandId:         614,
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Init() {
 	var err error
-	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
+	conn, err = grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}
@@ -99,6 +128,8 @@ func main() {
 	//TestGoodsList()
 	//TestBatchGetGoods()
 	//TestGetGoodsDetail()
-	TestUpdateGoods()
+	//TestUpdateGoods()
+	//TestDeleteGoods()
+	TestCreateGoods()
 	conn.Close()
 }

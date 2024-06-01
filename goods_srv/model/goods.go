@@ -65,6 +65,13 @@
 
 package model
 
+import (
+	"context"
+	"gorm.io/gorm"
+	"mxshop_srvs/goods_srv/global"
+	"strconv"
+)
+
 //类型， 这个字段是否能为null， 这个字段应该设置为可以为null还是设置为空， 0
 //实际开发过程中 尽量设置为不为null
 //https://zhuanlan.zhihu.com/p/73997266
@@ -129,4 +136,63 @@ type Goods struct {
 	Images          GormList `gorm:"type:varchar(1000);not null"`
 	DescImages      GormList `gorm:"type:varchar(1000);not null"`
 	GoodsFrontImage string   `gorm:"type:varchar(200);not null"`
+}
+
+//创建钩子方法，保存goods后，将数据保存到es中
+func (g *Goods) AfterCreate(tx *gorm.DB) (err error) {
+	esGoods := EsGoods{
+		ID:          g.ID,
+		CategoryID:  g.CategoryID,
+		BrandsID:    g.BrandsID,
+		OnSale:      g.OnSale,
+		ShipFree:    g.ShipFree,
+		IsNew:       g.IsNew,
+		IsHot:       g.IsHot,
+		Name:        g.Name,
+		ClickNum:    g.ClickNum,
+		SoldNum:     g.SoldNum,
+		FavNum:      g.FavNum,
+		MarketPrice: g.MarketPrice,
+		GoodsBrief:  g.GoodsBrief,
+		ShopPrice:   g.ShopPrice,
+	}
+	_, err = global.EsClient.Index().Index(EsGoods{}.GetIndexName()).Id(strconv.Itoa(int(g.ID))).BodyJson(&esGoods).Do(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//创建钩子方法，更新goods后，将数据更新到es中
+func (g *Goods) AfterUpdate(tx *gorm.DB) (err error) {
+	esGoods := EsGoods{
+		ID:          g.ID,
+		CategoryID:  g.CategoryID,
+		BrandsID:    g.BrandsID,
+		OnSale:      g.OnSale,
+		ShipFree:    g.ShipFree,
+		IsNew:       g.IsNew,
+		IsHot:       g.IsHot,
+		Name:        g.Name,
+		ClickNum:    g.ClickNum,
+		SoldNum:     g.SoldNum,
+		FavNum:      g.FavNum,
+		MarketPrice: g.MarketPrice,
+		GoodsBrief:  g.GoodsBrief,
+		ShopPrice:   g.ShopPrice,
+	}
+	_, err = global.EsClient.Update().Index(EsGoods{}.GetIndexName()).Id(strconv.Itoa(int(g.ID))).Doc(&esGoods).Do(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//创建钩子方法，删除goods后，将数据从es中删除
+func (g *Goods) AfterDelete(tx *gorm.DB) (err error) {
+	_, err = global.EsClient.Delete().Index(EsGoods{}.GetIndexName()).Id(strconv.Itoa(int(g.ID))).Do(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
 }

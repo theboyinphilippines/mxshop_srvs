@@ -20,11 +20,15 @@ type NacosConfig struct {
 	DataId      string `mapstructure:"dataId" json:"dataId"`
 	Group       string `mapstructure:"group" json:"group"`
 }
-
+type EsConfig struct {
+	Host string `mapstructure:"host" json:"host"`
+	Port int    `mapstructure:"port" json:"port"`
+}
 type ServerConfig struct {
-	Name       string       `mapstructure:"name" json:"name"`  //注册到consul中的服务名称
-	Host       string       `mapstructure:"host" json:"host"`  //服务的host
-	Tags       []string       `mapstructure:"tags" json:"tags"`  //服务的tags
+	Name       string       `mapstructure:"name" json:"name"` //注册到consul中的服务名称
+	Host       string       `mapstructure:"host" json:"host"` //服务的host
+	Tags       []string     `mapstructure:"tags" json:"tags"` //服务的tags
 	MysqlInfo  MysqlConfig  `mapstructure:"mysql" json:"mysql"`
 	ConsulInfo ConsulConfig `mapstructure:"consul" json:"consul"`
+	EsInfo     EsConfig     `mapstructure:"es" json:"es"`
 }
