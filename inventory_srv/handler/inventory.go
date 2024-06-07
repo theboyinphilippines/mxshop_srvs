@@ -2,7 +2,10 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/apache/rocketmq-client-go/v2/consumer"
+	"github.com/apache/rocketmq-client-go/v2/primitive"
 	goredislib "github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
@@ -10,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"gorm.io/gorm"
 	"mxshop_srvs/inventory_srv/global"
 	"mxshop_srvs/inventory_srv/model"
 	"mxshop_srvs/inventory_srv/proto"
@@ -162,7 +166,50 @@ func (i *InventoryServer) InvDetail(ctx context.Context, req *proto.GoodsInvInfo
 //	tx.Commit()
 //	return &empty.Empty{}, nil
 //}
-//扣减库存（redis分布式锁）
+//扣减库存（redis分布式锁，未使用消费消息归还库存前）
+//func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*emptypb.Empty, error) {
+//	//本地事务（扣除的是多个商品，要么全部成功，要么全部失败，使用gorm手动事务）
+//	//并发情况会出现超卖（分布式锁）
+//	// 开始事务
+//
+//	client := goredislib.NewClient(&goredislib.Options{
+//		Addr: "127.0.0.1:6379",
+//	})
+//	pool := goredis.NewPool(client)
+//	rs := redsync.New(pool)
+//
+//	tx := global.DB.Begin()
+//	for _, goodInfo := range req.GoodsInfo {
+//		var inv model.Inventory
+//		//获取分布式锁
+//		mutexName := fmt.Sprintf("goods_%d", goodInfo.GoodsId)
+//		mutex := rs.NewMutex(mutexName)
+//
+//		if err := mutex.Lock(); err != nil {
+//			return nil, status.Errorf(codes.Internal, "获取redis分布式锁失败")
+//		}
+//		if result := global.DB.Where(&model.Inventory{Goods: goodInfo.GoodsId}).First(&inv); result.RowsAffected == 0 {
+//			//回滚操作
+//			tx.Rollback()
+//			return nil, status.Errorf(codes.NotFound, "没有库存信息")
+//		}
+//		//判断库存是否充足
+//		if inv.Stocks < goodInfo.Num {
+//			//回滚操作
+//			tx.Rollback()
+//			return nil, status.Errorf(codes.ResourceExhausted, "库存不足")
+//		}
+//		//扣减库存
+//		inv.Stocks -= goodInfo.Num
+//		tx.Save(&inv)
+//		if ok, err := mutex.Unlock(); !ok || err != nil {
+//			return nil, status.Errorf(codes.Internal, "释放分布式锁异常")
+//		}
+//	}
+//	//手动提交事务
+//	tx.Commit()
+//	return &empty.Empty{}, nil
+//}
 func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*emptypb.Empty, error) {
 	//本地事务（扣除的是多个商品，要么全部成功，要么全部失败，使用gorm手动事务）
 	//并发情况会出现超卖（分布式锁）
@@ -175,6 +222,7 @@ func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*empty
 	rs := redsync.New(pool)
 
 	tx := global.DB.Begin()
+	var sellDetail model.SellDetail
 	for _, goodInfo := range req.GoodsInfo {
 		var inv model.Inventory
 		//获取分布式锁
@@ -198,16 +246,26 @@ func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*empty
 		//扣减库存
 		inv.Stocks -= goodInfo.Num
 		tx.Save(&inv)
+		sellDetail.Detail = append(sellDetail.Detail, model.GoodsNum{
+			GoodsId: goodInfo.GoodsId,
+			Num:     goodInfo.Num,
+		})
 		if ok, err := mutex.Unlock(); !ok || err != nil {
 			return nil, status.Errorf(codes.Internal, "释放分布式锁异常")
 		}
 	}
+
+	//插入到selldetail表
+	sellDetail.OrderSn = req.OrderSn
+	sellDetail.Status = 1
+	tx.Save(&sellDetail)
+
 	//手动提交事务
 	tx.Commit()
 	return &empty.Empty{}, nil
 }
 
-//库存归还
+//库存归还（未使用分布式事务方案处理前）
 func (i *InventoryServer) Reback(ctx context.Context, req *proto.SellInfo) (*emptypb.Empty, error) {
 	//1 订单超时归还 2 订单创建失败，归还之前创建的库存 3 手动归还
 	// 开始事务
@@ -226,4 +284,31 @@ func (i *InventoryServer) Reback(ctx context.Context, req *proto.SellInfo) (*emp
 	//手动提交事务
 	tx.Commit()
 	return &empty.Empty{}, nil
+}
+
+//库存归还（消费库存归还消息）
+func AutoReback(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	type orderInfo struct {
+		OrderSn string
+	}
+	for i := range msgs {
+		fmt.Printf("消费消息order_reback：%v", msgs[i])
+		var order orderInfo
+		_ = json.Unmarshal(msgs[i].Body, &order)
+		tx := global.DB.Begin()
+		var sellDetail model.SellDetail
+		if result := tx.Model(&model.SellDetail{}).Where(&model.SellDetail{OrderSn: order.OrderSn, Status: 1}).First(&sellDetail); result.RowsAffected == 0 {
+			return consumer.ConsumeRetryLater, nil
+		}
+		for _, detail := range sellDetail.Detail {
+			if result := tx.Model(&model.Inventory{}).Where(&model.Inventory{Goods: detail.GoodsId}).Update("stocks", gorm.Expr("stocks + ?", detail.Num)); result.RowsAffected == 0 {
+				return consumer.ConsumeRetryLater, nil
+			}
+		}
+		//将sellDetail表中状态设置为已归还
+		sellDetail.Status = 2
+		tx.Save(&sellDetail)
+		tx.Commit()
+	}
+	return consumer.ConsumeSuccess, nil
 }

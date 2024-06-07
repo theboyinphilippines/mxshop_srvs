@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/apache/rocketmq-client-go/v2"
+	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -72,6 +74,17 @@ func main() {
 			panic("fail to listen:" + err.Error())
 		}
 	}()
+
+	//消费库存归还消息order_timeout
+	c, err := rocketmq.NewPushConsumer(consumer.WithNameServer([]string{"192.168.0.101:9876"}), consumer.WithGroupName("order"))
+	if err != nil {
+		zap.S().Errorf("消费者初始化失败：%v", err)
+	}
+	err = c.Subscribe("order_timeout", consumer.MessageSelector{}, handler.OrderTimeOut)
+	if err != nil {
+		zap.S().Errorf("消费者订阅消息失败：%v", err)
+	}
+	_ = c.Start()
 
 	//接收终止信号， 优雅关闭服务
 	quit := make(chan os.Signal)

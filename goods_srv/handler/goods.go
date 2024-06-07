@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"gorm.io/gorm"
 	"mxshop_srvs/goods_srv/global"
 	"mxshop_srvs/goods_srv/model"
 	"mxshop_srvs/goods_srv/proto"
@@ -181,7 +182,10 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 }
 func (s *GoodsServer) BatchGetGoods(ctx context.Context, req *proto.BatchGoodsIdInfo) (*proto.GoodsListResponse, error) {
 	var goods []model.Goods
-	result := global.DB.Where("id IN ?", req.Id).Preload("Category").Preload("Brands").Find(&goods)
+	var result *gorm.DB
+	if result = global.DB.Where("id IN ?", req.Id).Preload("Category").Preload("Brands").Find(&goods); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.Internal, "没有查询到批量商品")
+	}
 	//result := global.DB.Find(&goods,req.Id) （根据主键查询）
 	var goodsListResponse proto.GoodsListResponse
 	goodsListResponse.Total = int32(result.RowsAffected)

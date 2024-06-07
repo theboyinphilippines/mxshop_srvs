@@ -41,7 +41,7 @@ func TestCreateOrder() {
 	_, err := orderClient.CreateOrder(context.Background(), &proto.OrderRequest{
 		UserId:  1,
 		Address: "beijing",
-		Name:    "shy",
+		Name:    "end",
 		Mobile:  "18758782858",
 		Post:    "kuaidian",
 	})
@@ -75,7 +75,7 @@ func main() {
 	//TestCreateCartItem()
 	//TestCartItemList()
 	//TestUpdateCartItem()
-	//TestCreateOrder()
-	TestOrderDetail()
+	TestCreateOrder()
+	//TestOrderDetail()
 	conn.Close()
 }

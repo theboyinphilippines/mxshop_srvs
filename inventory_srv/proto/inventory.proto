@@ -16,4 +16,5 @@ message GoodsInvInfo {
 // 一般买东西喜欢从购物车中去买(有多件商品)，包括事务
 message SellInfo {
   repeated GoodsInvInfo goodsInfo = 1;
+  string orderSn = 2;
 }

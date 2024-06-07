@@ -13,6 +13,8 @@ import (
 )
 
 func InitDB() {
+	//打印sql
+	//语句日志配置
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
@@ -21,7 +23,6 @@ func InitDB() {
 			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
 			ParameterizedQueries:      true,        // Don't include params in the SQL log
 			Colorful:                  true,        // Disable color
-
 		},
 	)
 

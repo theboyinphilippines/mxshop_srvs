@@ -3,20 +3,19 @@ package initialize
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"mxshop_srvs/goods_srv/global"
 	"os"
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 // 配置环境变量，根据环境变量来决定用开发还是生产的配置文件
 func GetEnvInfo(env string) bool {
 	viper.AutomaticEnv()
 	return viper.GetBool(env)
-
 }
 
 func InitConfig() {
@@ -61,7 +60,7 @@ func InitConfig() {
 	serverConfigs := []constant.ServerConfig{
 		{
 			IpAddr: global.NacosConfig.Host,
-			Port: global.NacosConfig.Port,
+			Port:   global.NacosConfig.Port,
 		},
 	}
 
@@ -94,11 +93,9 @@ func InitConfig() {
 
 	//将从nacos中获取的配置数据绑定到结构体中
 	fmt.Println("这是content", content)
-	err = json.Unmarshal([]byte(content),&global.ServerConfig)
-	if err != nil{
+	err = json.Unmarshal([]byte(content), &global.ServerConfig)
+	if err != nil {
 		zap.S().Fatalf("读取nacos配置失败： %s", err.Error())
 	}
-	fmt.Println("这是global.ServerConfig",&global.ServerConfig)
-
-
+	fmt.Println("这是global.ServerConfig", &global.ServerConfig)
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/hashicorp/consul/api"
 	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -14,6 +13,7 @@ import (
 	"mxshop_srvs/goods_srv/initialize"
 	"mxshop_srvs/goods_srv/proto"
 	"mxshop_srvs/goods_srv/utils"
+	"mxshop_srvs/goods_srv/utils/register/consul"
 	"net"
 	"os"
 	"os/signal"
@@ -50,37 +50,67 @@ func main() {
 	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 
 	//服务注册
-	cfg := api.DefaultConfig()
-	cfg.Address = fmt.Sprintf("%s:%d",
-		global.ServerConfig.ConsulInfo.Host,
+	//cfg := api.DefaultConfig()
+	//cfg.Address = fmt.Sprintf("%s:%d",
+	//	global.ServerConfig.ConsulInfo.Host,
+	//	global.ServerConfig.ConsulInfo.Port)
+	//client, err := api.NewClient(cfg)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//// 生成对应的检查对象
+	//check := &api.AgentServiceCheck{
+	//	GRPC:                           fmt.Sprintf("%s:%d", global.ServerConfig.Host, *Port),
+	//	Timeout:                        "5s",
+	//	Interval:                       "5s",
+	//	DeregisterCriticalServiceAfter: "10s",
+	//}
+	//
+	//registration := new(api.AgentServiceRegistration)
+	//registration.Name = global.ServerConfig.Name
+	//serviceID := fmt.Sprintf("%s", uuid.NewV4())
+	//registration.ID = serviceID
+	//registration.Port = *Port
+	//registration.Tags = global.ServerConfig.Tags
+	//registration.Address = global.ServerConfig.Host
+	//registration.Check = check
+	//
+	//// 生成注册对象
+	//err = client.Agent().ServiceRegister(registration)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//go func() {
+	//	err = server.Serve(lis)
+	//	if err != nil {
+	//		panic("fail to listen:" + err.Error())
+	//	}
+	//}()
+	//
+	////接收终止信号， 优雅关闭服务
+	//quit := make(chan os.Signal)
+	//signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	//<-quit
+	//if err = client.Agent().ServiceDeregister(serviceID); err != nil {
+	//	zap.S().Info("注销失败")
+	//}
+	//zap.S().Info("注销成功")
+
+	//服务注册到consul中
+	registerClient := consul.NewRegistryClient(global.ServerConfig.ConsulInfo.Host,
 		global.ServerConfig.ConsulInfo.Port)
-	client, err := api.NewClient(cfg)
+	serviceId := fmt.Sprintf("%s", uuid.NewV4())
+	err = registerClient.Register(global.ServerConfig.Host,
+		*Port,
+		global.ServerConfig.Name,
+		global.ServerConfig.Tags,
+		serviceId)
 	if err != nil {
-		panic(err)
+		zap.S().Panic("服务注册失败：", err.Error())
 	}
-
-	// 生成对应的检查对象
-	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("%s:%d", global.ServerConfig.Host, *Port),
-		Timeout:                        "5s",
-		Interval:                       "5s",
-		DeregisterCriticalServiceAfter: "10s",
-	}
-
-	registration := new(api.AgentServiceRegistration)
-	registration.Name = global.ServerConfig.Name
-	serviceID := fmt.Sprintf("%s", uuid.NewV4())
-	registration.ID = serviceID
-	registration.Port = *Port
-	registration.Tags = global.ServerConfig.Tags
-	registration.Address = global.ServerConfig.Host
-	registration.Check = check
-
-	// 生成注册对象
-	err = client.Agent().ServiceRegister(registration)
-	if err != nil {
-		panic(err)
-	}
+	zap.S().Debugf("启动服务器，端口：%d", *Port)
 
 	go func() {
 		err = server.Serve(lis)
@@ -93,9 +123,12 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	if err = client.Agent().ServiceDeregister(serviceID); err != nil {
-		zap.S().Info("注销失败")
+	//注销服务
+	err = registerClient.DeRegister(serviceId)
+	if err != nil {
+		zap.S().Info("注销失败：", err.Error())
+	} else {
+		zap.S().Info("注销成功")
 	}
-	zap.S().Info("注销成功")
 
 }
