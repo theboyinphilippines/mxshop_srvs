@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
+	"github.com/opentracing/opentracing-go"
 	"github.com/satori/go.uuid"
+	"github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -15,6 +18,7 @@ import (
 	"mxshop_srvs/order_srv/initialize"
 	"mxshop_srvs/order_srv/proto"
 	"mxshop_srvs/order_srv/utils"
+	"mxshop_srvs/order_srv/utils/otgrpc"
 	"mxshop_srvs/order_srv/utils/register/consul"
 	"net"
 	"os"
@@ -43,11 +47,31 @@ func main() {
 	}
 	zap.S().Info("port:", *Port)
 
-	server := grpc.NewServer()
+	//链路追踪配置
+	cfg := jaegercfg.Configuration{
+		//采样器设置
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  jaeger.SamplerTypeConst,
+			Param: 1,
+		},
+		//jaeger agent设置
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans:           true,
+			LocalAgentHostPort: "192.168.0.101:6831",
+		},
+		ServiceName: "mxshop-order-srv",
+	}
+	tracer, closer, err := cfg.NewTracer(jaegercfg.Logger(jaeger.StdLogger))
+	if err != nil {
+		panic(any(err))
+	}
+	opentracing.SetGlobalTracer(tracer)
+
+	server := grpc.NewServer(grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
 	proto.RegisterOrderServer(server, &handler.OrderServer{})
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
-		panic("fail to listen:" + err.Error())
+		panic(any("fail to listen:" + err.Error()))
 	}
 
 	// 将grpc服务 注册健康检查
@@ -71,7 +95,7 @@ func main() {
 	go func() {
 		err = server.Serve(lis)
 		if err != nil {
-			panic("fail to listen:" + err.Error())
+			panic(any("fail to listen:" + err.Error()))
 		}
 	}()
 
@@ -90,6 +114,7 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	_ = closer.Close()
 	err = registerClient.DeRegister(serviceId)
 	if err != nil {
 		zap.S().Info("注销失败：", err.Error())

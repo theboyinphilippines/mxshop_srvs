@@ -14,7 +14,7 @@ func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:51738", grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	userClient = proto.NewUserClient(conn)
 
@@ -26,7 +26,7 @@ func TestGetUserList() {
 		PSize: 5,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	for _, user := range rsp.Data {
 		fmt.Println(user.Mobile, user.NickName, user.PassWord)
@@ -35,7 +35,7 @@ func TestGetUserList() {
 			EncryptedPassword: user.PassWord,
 		})
 		if err != nil {
-			panic(err)
+			panic(any(err))
 		}
 		fmt.Println(checkPsp.Success)
 	}
@@ -49,7 +49,7 @@ func TestCreateUser() {
 			PassWord: "admin123",
 		})
 		if err != nil {
-			panic(err)
+			panic(any(err))
 		}
 		fmt.Println(rsp.Id)
 	}

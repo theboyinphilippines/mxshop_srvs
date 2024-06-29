@@ -33,7 +33,7 @@ func main() {
 
 	flag.Parse()
 	zap.S().Info("ip:", *IP)
-	if *Port == 0{
+	if *Port == 0 {
 		*Port, _ = utils.GetFreePort()
 	}
 	zap.S().Info("port:", *Port)
@@ -42,10 +42,11 @@ func main() {
 	proto.RegisterUserServer(server, &handler.UserServer{})
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
-		panic("fail to listen:" + err.Error())
+		panic(any("fail to listen:" + err.Error()))
 	}
 
-
+	// 将grpc服务 注册健康检查
+	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 
 	//服务注册
 	cfg := api.DefaultConfig()
@@ -54,13 +55,13 @@ func main() {
 		global.ServerConfig.ConsulInfo.Port)
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 
 	}
 
 	// 生成对应的检查对象
 	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("192.168.1.101:%d", *Port),
+		GRPC:                           fmt.Sprintf("%s:%d", global.ServerConfig.Host, *Port),
 		Timeout:                        "5s",
 		Interval:                       "5s",
 		DeregisterCriticalServiceAfter: "10s",
@@ -78,15 +79,13 @@ func main() {
 	// 生成注册对象
 	err = client.Agent().ServiceRegister(registration)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
-	// 将grpc服务 注册健康检查
-	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 
 	go func() {
 		err = server.Serve(lis)
 		if err != nil {
-			panic("fail to listen:" + err.Error())
+			panic(any("fail to listen:" + err.Error()))
 		}
 	}()
 

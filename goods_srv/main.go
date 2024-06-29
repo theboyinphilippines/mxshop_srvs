@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/opentracing/opentracing-go"
 	"github.com/satori/go.uuid"
+	"github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -13,6 +16,7 @@ import (
 	"mxshop_srvs/goods_srv/initialize"
 	"mxshop_srvs/goods_srv/proto"
 	"mxshop_srvs/goods_srv/utils"
+	"mxshop_srvs/goods_srv/utils/otgrpc"
 	"mxshop_srvs/goods_srv/utils/register/consul"
 	"net"
 	"os"
@@ -40,11 +44,32 @@ func main() {
 	}
 	zap.S().Info("port:", *Port)
 
-	server := grpc.NewServer()
+	//链路追踪配置
+	cfg := jaegercfg.Configuration{
+		//采样器设置
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  jaeger.SamplerTypeConst,
+			Param: 1,
+		},
+		//jaeger agent设置
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans:           true,
+			LocalAgentHostPort: "192.168.0.101:6831",
+		},
+		ServiceName: "mxshop-goods-srv",
+	}
+	tracer, closer, err := cfg.NewTracer(jaegercfg.Logger(jaeger.StdLogger))
+	if err != nil {
+		panic(any(err))
+	}
+	opentracing.SetGlobalTracer(tracer)
+
+	server := grpc.NewServer(grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
 	proto.RegisterGoodsServer(server, &handler.GoodsServer{})
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
-		panic("fail to listen:" + err.Error())
+		//panic(any("fail to listen:" + err.Error()))
+		panic(any("fail to listen:" + err.Error()))
 	}
 	// 将grpc服务 注册健康检查
 	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
@@ -56,7 +81,7 @@ func main() {
 	//	global.ServerConfig.ConsulInfo.Port)
 	//client, err := api.NewClient(cfg)
 	//if err != nil {
-	//	panic(err)
+	//	panic(any(err))
 	//}
 	//
 	//// 生成对应的检查对象
@@ -79,13 +104,13 @@ func main() {
 	//// 生成注册对象
 	//err = client.Agent().ServiceRegister(registration)
 	//if err != nil {
-	//	panic(err)
+	//	panic(any(err))
 	//}
 	//
 	//go func() {
 	//	err = server.Serve(lis)
 	//	if err != nil {
-	//		panic("fail to listen:" + err.Error())
+	//		panic(any("fail to listen:" + err.Error()))
 	//	}
 	//}()
 	//
@@ -115,7 +140,7 @@ func main() {
 	go func() {
 		err = server.Serve(lis)
 		if err != nil {
-			panic("fail to listen:" + err.Error())
+			panic(any("fail to listen:" + err.Error()))
 		}
 	}()
 
@@ -123,6 +148,8 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+
+	_ = closer.Close()
 	//注销服务
 	err = registerClient.DeRegister(serviceId)
 	if err != nil {

@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/empty.proto";
+//生成的源文件放到当前目录，源文件的包名为proto
 option go_package = "./;proto";
 
 service Goods{

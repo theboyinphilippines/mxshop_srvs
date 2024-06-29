@@ -22,7 +22,8 @@ type NacosConfig struct {
 }
 
 type ServerConfig struct {
-	Name       string       `mapstructure:"name" json:"name"`  //注册到consul中的服务名称
+	Host       string       `mapstructure:"host" json:"host"`
+	Name       string       `mapstructure:"name" json:"name"` //注册到consul中的服务名称
 	MysqlInfo  MysqlConfig  `mapstructure:"mysql" json:"mysql"`
 	ConsulInfo ConsulConfig `mapstructure:"consul" json:"consul"`
 }

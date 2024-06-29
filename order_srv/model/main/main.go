@@ -41,7 +41,7 @@ func main() {
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 
 	// 设置全局logger,打印sql语句

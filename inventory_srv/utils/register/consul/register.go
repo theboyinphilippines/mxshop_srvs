@@ -29,7 +29,7 @@ func (reg *Registry) Register(address string, port int, name string, tags []stri
 	cfg.Address = fmt.Sprintf("%s:%d", reg.Host, reg.Port)
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 
 	}
 
@@ -52,7 +52,7 @@ func (reg *Registry) Register(address string, port int, name string, tags []stri
 	// 生成注册对象
 	err = client.Agent().ServiceRegister(registration)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	return nil
 

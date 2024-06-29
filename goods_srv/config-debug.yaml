@@ -13,6 +13,8 @@
 #  port: 8500
 
 #host: 192.168.1.101
+
+# nacos配置，其他配置从nacos中配置文件中读取
 host: 192.168.0.101
 port: 8848
 namespaceId: 15fdf165-b5f4-4a9a-9402-0150e4bc774d

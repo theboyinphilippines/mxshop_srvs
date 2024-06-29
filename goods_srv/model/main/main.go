@@ -45,7 +45,7 @@ func main() {
 	//	NamingStrategy: schema.NamingStrategy{SingularTable: true},
 	//})
 	//if err != nil {
-	//	panic(err)
+	//	panic(any(err))
 	//}
 	//
 	//// 设置全局logger,打印sql语句
@@ -58,7 +58,7 @@ func main() {
 
 }
 
-//将mysql中的goods表中的数据同步到es中
+// 将mysql中的goods表中的数据同步到es中
 func mysqlToEs() {
 	dsn := "root:1234qwer!@tcp(192.168.0.101:3306)/mxshop_goods_srv?charset=utf8mb4&parseTime=True&loc=Local"
 
@@ -79,7 +79,7 @@ func mysqlToEs() {
 		Logger: newLogger,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 
 	host := "http://192.168.0.101:9200"
@@ -87,7 +87,7 @@ func mysqlToEs() {
 	global.EsClient, err = elastic.NewClient(elastic.SetURL(host), elastic.SetSniff(false),
 		elastic.SetTraceLog(logger))
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 
 	var goods []model.Goods

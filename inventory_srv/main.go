@@ -45,7 +45,7 @@ func main() {
 	proto.RegisterInventoryServer(server, &handler.InventoryServer{})
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
-		panic("fail to listen:" + err.Error())
+		panic(any("fail to listen:" + err.Error()))
 	}
 
 	// 将grpc服务 注册健康检查
@@ -69,7 +69,7 @@ func main() {
 	go func() {
 		err = server.Serve(lis)
 		if err != nil {
-			panic("fail to listen:" + err.Error())
+			panic(any("fail to listen:" + err.Error()))
 		}
 	}()
 

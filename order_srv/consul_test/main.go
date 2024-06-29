@@ -11,7 +11,7 @@ func Register(address string, port int, name string, tags []string, id string) e
 	cfg.Address = "192.168.1.101:8500"
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 
 	}
 
@@ -34,7 +34,7 @@ func Register(address string, port int, name string, tags []string, id string) e
 	// 生成注册对象
 	err = client.Agent().ServiceRegister(registration)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	return nil
 
@@ -45,12 +45,12 @@ func Allservice() {
 	cfg.Address = "192.168.1.101:8500"
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	// 获取所有服务
 	data, err := client.Agent().Services()
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	for key, _ := range data {
 		fmt.Println(key)
@@ -64,7 +64,7 @@ func FilterService() {
 	cfg.Address = "192.168.1.101:8500"
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	data, err := client.Agent().ServicesWithFilter(`Service==order_srv`)
 	if err != nil {

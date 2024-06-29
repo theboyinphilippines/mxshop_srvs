@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/hashicorp/consul/api"
 )
+
 // 这里是测试consul连接，与项目无关
 func Register(address string, port int, name string, tags []string, id string) error {
 	cfg := api.DefaultConfig()
 	cfg.Address = "192.168.1.101:8500"
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 
 	}
 
@@ -33,43 +34,43 @@ func Register(address string, port int, name string, tags []string, id string) e
 	// 生成注册对象
 	err = client.Agent().ServiceRegister(registration)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	return nil
 
 }
 
-func Allservice()  {
-	cfg:= api.DefaultConfig()
+func Allservice() {
+	cfg := api.DefaultConfig()
 	cfg.Address = "192.168.1.101:8500"
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	// 获取所有服务
-	data,err:=client.Agent().Services()
+	data, err := client.Agent().Services()
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
-	for key, _ :=range data {
+	for key, _ := range data {
 		fmt.Println(key)
 
 	}
 
 }
 
-func FilterService(){
-	cfg:= api.DefaultConfig()
+func FilterService() {
+	cfg := api.DefaultConfig()
 	cfg.Address = "192.168.1.101:8500"
 	client, err := api.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	data, err := client.Agent().ServicesWithFilter(`Service==goods_srv`)
 	if err != nil {
-		return 
+		return
 	}
-	for key, _ :=range data {
+	for key, _ := range data {
 		fmt.Println(key)
 	}
 

@@ -17,7 +17,7 @@ func TestSetInv(goodsId int32, num int32) {
 		Num:     num,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -30,7 +30,7 @@ func TestSell(wg *sync.WaitGroup) {
 		},
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println("库存扣减成功")
 }
@@ -43,7 +43,7 @@ func TestReback() {
 		},
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println("库存归还成功")
 }
@@ -52,7 +52,7 @@ func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	inventoryClient = proto.NewInventoryClient(conn)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/olivere/elastic/v7"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -52,7 +53,7 @@ func modelToGoodsResponse(good model.Goods) proto.GoodsInfoResponse {
 	}
 }
 
-//商品列表(通过点击一二三级类目去查询出商品)
+// 商品列表(通过点击一二三级类目去查询出商品)
 func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterRequest) (*proto.GoodsListResponse, error) {
 	//使用es的目的是搜索出商品的id来，通过id拿到具体的字段信息是通过mysql来完成
 	//我们使用es是用来做搜索的， 是否应该将所有的mysql字段全部在es中保存一份
@@ -92,6 +93,9 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 		//localDB = localDB.Where(&model.Goods{BrandsID: req.Brand})
 		q = q.Filter(elastic.NewTermQuery("brands_id", req.Brand))
 	}
+
+	parentSpan := opentracing.SpanFromContext(ctx)
+	topCategorySpan := opentracing.GlobalTracer().StartSpan("TopCategory", opentracing.ChildOf(parentSpan.Context()))
 	subQuery := ""
 	if req.TopCategory > 0 {
 		//通过点击一二三级category去查询商品
@@ -128,6 +132,7 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 		// 生成满足categoryIds的匹配条件（切片传入多个值，用terms）
 		q = q.Filter(elastic.NewTermsQuery("category_id", categoryIds...))
 	}
+	topCategorySpan.Finish()
 
 	//用category ids去es中查询出goods，取出goods ids
 	//分页
@@ -141,12 +146,14 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 	case req.PagePerNums <= 0:
 		req.PagePerNums = 10
 	}
+	esSearchSpan := opentracing.GlobalTracer().StartSpan("esSearchSpan", opentracing.ChildOf(parentSpan.Context()))
 	rsp, err := global.EsClient.Search().Index(model.EsGoods{}.GetIndexName()).Query(q).From(int(req.Pages)).Size(int(req.PagePerNums)).Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	goodsListResponse.Total = int32(rsp.Hits.TotalHits.Value)
+	esSearchSpan.Finish()
 
+	goodsListResponse.Total = int32(rsp.Hits.TotalHits.Value)
 	goodsIds := make([]int32, 0)
 	for _, value := range rsp.Hits.Hits {
 		var esGoods model.EsGoods
@@ -156,7 +163,9 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 
 	// 用goods ids 去数据库中查询出goods list
 	//localDB.Preload("Category").Preload("Brands").Where(fmt.Sprintf("category_id IN (%s)", subQuery)).Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&goods)
+	goodsListSpan := opentracing.GlobalTracer().StartSpan("goodsListSpan", opentracing.ChildOf(parentSpan.Context()))
 	localDB.Preload("Category").Preload("Brands").Find(&goods, goodsIds)
+	goodsListSpan.Finish()
 
 	var goodsInfoResponse []*proto.GoodsInfoResponse
 	for _, good := range goods {

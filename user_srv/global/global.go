@@ -2,12 +2,12 @@ package global
 
 import (
 	"gorm.io/gorm"
-	"mxshop_srvs/goods_srv/config"
+	"mxshop_srvs/user_srv/config"
 )
 
 // init方法：被引用这个包时，会自动调用init方法
 var (
 	DB           *gorm.DB
 	ServerConfig config.ServerConfig
-	NacosConfig config.NacosConfig
+	NacosConfig  config.NacosConfig
 )

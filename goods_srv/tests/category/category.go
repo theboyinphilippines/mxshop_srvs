@@ -14,7 +14,7 @@ var conn *grpc.ClientConn
 func TestGetCategoryList() {
 	rsp, err := brandClient.GetAllCategorysList(context.Background(), &empty.Empty{})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.JsonData)
 }
@@ -22,7 +22,7 @@ func TestGetCategoryList() {
 func TestGetSubCategoryList() {
 	rsp, err := brandClient.GetSubCategory(context.Background(), &proto.CategoryListRequest{Id: 130358, Level: 1})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Info)
 	fmt.Println(rsp.SubCategorys)
@@ -35,7 +35,7 @@ func TestCreateCategory() {
 		ParentCategory: 130358,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Id)
 	fmt.Println(rsp.Name)
@@ -46,7 +46,7 @@ func TestDeleteCategory() {
 		Id: 238010,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -59,7 +59,7 @@ func TestUpdateCategory() {
 		IsTab:          false,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -69,7 +69,7 @@ func TestCategoryBrandList() {
 		PagePerNums: 10,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 func TestGetCategoryBrandList() {
@@ -77,7 +77,7 @@ func TestGetCategoryBrandList() {
 		Id: 130368,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Total)
 	fmt.Println(rsp.Data)
@@ -88,7 +88,7 @@ func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	brandClient = proto.NewGoodsClient(conn)
 }

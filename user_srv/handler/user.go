@@ -18,7 +18,7 @@ import (
 )
 
 // 从数据库查询出的数据转换成要返回的格式
-func ModelToResponse(user model.User) proto.UserInfoResponse {
+func ModelToResponse(user model.User) *proto.UserInfoResponse {
 	userInfoRsp := proto.UserInfoResponse{
 		Id:       user.ID,
 		PassWord: user.Password,
@@ -34,7 +34,7 @@ func ModelToResponse(user model.User) proto.UserInfoResponse {
 		userInfoRsp.BirthDay = uint64(user.Birthday.Unix())
 	}
 
-	return userInfoRsp
+	return &userInfoRsp
 
 }
 
@@ -75,7 +75,7 @@ func (s *UserServer) GetUserList(ctx context.Context, req *proto.PageInfo) (*pro
 
 	for _, user := range users {
 		userInfoResp := ModelToResponse(user)
-		rsp.Data = append(rsp.Data, &userInfoResp)
+		rsp.Data = append(rsp.Data, userInfoResp)
 	}
 
 	return rsp, nil
@@ -92,7 +92,7 @@ func (s *UserServer) GetUserMobile(ctx context.Context, req *proto.MobileRequest
 		return nil, result.Error
 	}
 	userInfoRsp := ModelToResponse(user)
-	return &userInfoRsp, nil
+	return userInfoRsp, nil
 
 }
 
@@ -107,7 +107,7 @@ func (s *UserServer) GetUserById(ctx context.Context, req *proto.IdRequest) (*pr
 		return nil, result.Error
 	}
 	userInfoRsp := ModelToResponse(user)
-	return &userInfoRsp, nil
+	return userInfoRsp, nil
 
 }
 
@@ -133,7 +133,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *proto.CreateUserInfo) 
 	}
 
 	userInfoRsp := ModelToResponse(user)
-	return &userInfoRsp, nil
+	return userInfoRsp, nil
 
 }
 

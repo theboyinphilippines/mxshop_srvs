@@ -14,7 +14,7 @@ var conn *grpc.ClientConn
 func TestGetBrandList() {
 	rsp, err := brandClient.BrandList(context.Background(), &proto.BrandFilterRequest{})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Total)
 	for _, brand := range rsp.Data {
@@ -32,7 +32,7 @@ func TestGoodsList() {
 		TopCategory: 130358,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Total)
 	for _, goodsInfo := range rsp.Data {
@@ -43,7 +43,7 @@ func TestGoodsList() {
 func TestGetAllCategoryList() {
 	rsp, err := brandClient.GetAllCategorysList(context.Background(), &empty.Empty{})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Total)
 	fmt.Println(rsp.Data)
@@ -55,7 +55,7 @@ func TestBatchGetGoods() {
 		Id: []int32{421, 422, 423},
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Total)
 	fmt.Println(rsp.Data)
@@ -66,7 +66,7 @@ func TestGetGoodsDetail() {
 		Id: 421,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Name)
 }
@@ -79,14 +79,14 @@ func TestUpdateGoods() {
 		GoodsBrief: "是在太好吃的东南亚进口好榴莲",
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
 func TestDeleteGoods() {
 	_, err := brandClient.DeleteGoods(context.Background(), &proto.DeleteGoodsInfo{Id: 847})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -108,7 +108,7 @@ func TestCreateGoods() {
 		BrandId:         614,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -116,7 +116,7 @@ func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	brandClient = proto.NewGoodsClient(conn)
 }
@@ -130,6 +130,7 @@ func main() {
 	//TestGetGoodsDetail()
 	//TestUpdateGoods()
 	//TestDeleteGoods()
-	TestCreateGoods()
+	//TestCreateGoods()
 	conn.Close()
+
 }

@@ -12,7 +12,7 @@ import (
 func main() {
 	c, err := rocketmq.NewPushConsumer(consumer.WithNameServer([]string{"192.168.0.101:9876"}), consumer.WithGroupName("test"))
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	err = c.Subscribe("mytopic", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for k, _ := range msgs {
@@ -24,11 +24,11 @@ func main() {
 		return consumer.ConsumeSuccess, nil
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	err = c.Start()
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	time.Sleep(time.Hour)
 	err = c.Shutdown()

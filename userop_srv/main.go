@@ -23,7 +23,7 @@ import (
 func main() {
 	// 命令行输入ip port来启动
 	IP := flag.String("ip", "0.0.0.0", "ip地址")
-	Port := flag.Int("port", 50051, "端口号")
+	Port := flag.Int("port", 50059, "端口号")
 
 	// 初始化
 	initialize.InitLogger()
@@ -45,7 +45,7 @@ func main() {
 	proto.RegisterUserFavServer(server, &handler.UserOpServer{})
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
-		panic("fail to listen:" + err.Error())
+		panic(any("fail to listen:" + err.Error()))
 	}
 
 	// 将grpc服务 注册健康检查
@@ -69,7 +69,7 @@ func main() {
 	go func() {
 		err = server.Serve(lis)
 		if err != nil {
-			panic("fail to listen:" + err.Error())
+			panic(any("fail to listen:" + err.Error()))
 		}
 	}()
 

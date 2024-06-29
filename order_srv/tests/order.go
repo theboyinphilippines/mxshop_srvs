@@ -17,7 +17,7 @@ func TestCreateCartItem() {
 		Nums:    30,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 func TestCartItemList() {
@@ -33,7 +33,7 @@ func TestUpdateCartItem() {
 		Checked: true,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -46,7 +46,7 @@ func TestCreateOrder() {
 		Post:    "kuaidian",
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 }
 
@@ -55,7 +55,7 @@ func TestOrderDetail() {
 		Id: 2,
 	})
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	fmt.Println(rsp.Goods)
 	fmt.Println(rsp.OrderInfo)
@@ -65,7 +65,7 @@ func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	orderClient = proto.NewOrderClient(conn)
 }

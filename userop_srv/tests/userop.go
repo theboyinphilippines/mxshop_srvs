@@ -50,7 +50,7 @@ func Init() {
 	var err error
 	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		panic(any(err))
 	}
 	addressClient = proto.NewAddressClient(conn)
 	messageClient = proto.NewMessageClient(conn)
