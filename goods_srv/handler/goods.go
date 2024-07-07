@@ -205,6 +205,16 @@ func (s *GoodsServer) BatchGetGoods(ctx context.Context, req *proto.BatchGoodsId
 	return &goodsListResponse, nil
 }
 func (s *GoodsServer) CreateGoods(ctx context.Context, req *proto.CreateGoodsInfo) (*proto.GoodsInfoResponse, error) {
+	//判断category id是否存在
+	var category model.Category
+	if result := global.DB.First(&category, req.CategoryId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "商品分类不存在")
+	}
+	//判断brand id是否存在
+	var brand model.Brands
+	if result := global.DB.First(&brand, req.BrandId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "品牌不存在")
+	}
 	var good model.Goods
 	good.Name = req.Name
 	good.GoodsSn = req.GoodsSn

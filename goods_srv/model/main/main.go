@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"github.com/olivere/elastic/v7"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -55,7 +56,21 @@ func main() {
 	//	model.Goods{}, model.GoodsCategoryBrand{}, model.Banner{})
 
 	mysqlToEs()
+	//res := getB()
+	//fmt.Printf("这是res：%v", res)
 
+}
+
+// 测试下defer关键字
+func getB() int {
+	a := 3
+	defer func() {
+		fmt.Printf("这是a: %v\n", a)
+	}()
+	b := 5
+	panic(any("异常"))
+	fmt.Printf("这是b: %v", b)
+	return b
 }
 
 // 将mysql中的goods表中的数据同步到es中

@@ -26,7 +26,9 @@ func TestSell(wg *sync.WaitGroup) {
 	_, err := inventoryClient.Sell(context.Background(), &proto.SellInfo{
 		GoodsInfo: []*proto.GoodsInvInfo{
 			{GoodsId: 421, Num: 1},
-			{GoodsId: 422, Num: 1},
+			{GoodsId: 422, Num: 2},
+			{GoodsId: 423, Num: 3},
+			{GoodsId: 424, Num: 4},
 		},
 	})
 	if err != nil {
@@ -39,7 +41,7 @@ func TestReback() {
 	_, err := inventoryClient.Reback(context.Background(), &proto.SellInfo{
 		GoodsInfo: []*proto.GoodsInvInfo{
 			{GoodsId: 421, Num: 10},
-			{GoodsId: 422, Num: 30},
+			{GoodsId: 422, Num: 20},
 		},
 	})
 	if err != nil {
@@ -50,7 +52,7 @@ func TestReback() {
 
 func Init() {
 	var err error
-	conn, err = grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
+	conn, err = grpc.Dial("127.0.0.1:50053", grpc.WithInsecure())
 	if err != nil {
 		panic(any(err))
 	}
@@ -68,8 +70,8 @@ func main() {
 	//TestReback()
 
 	var wg sync.WaitGroup
-	wg.Add(20)
-	for i := 0; i < 20; i++ {
+	wg.Add(100)
+	for i := 0; i < 100; i++ {
 		go TestSell(&wg)
 	}
 	wg.Wait()
