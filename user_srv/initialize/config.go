@@ -101,3 +101,54 @@ func InitConfig() {
 	fmt.Println("这是global.ServerConfig", &global.ServerConfig)
 
 }
+
+// 从apollo中读取配置
+//func InitConfig() {
+//	// 从配置文件中读取对应的配置
+//
+//	debug := GetEnvInfo("MZSHOP_DEBUG")
+//	fmt.Printf("debug是：%v\n", debug)
+//	configFilePrefix := "config"
+//	fmt.Println(os.Getwd())
+//	configFileName := fmt.Sprintf("user_srv/%s-pro.yaml", configFilePrefix)
+//	//configFileName := fmt.Sprintf("./%s-pro.yaml", configFilePrefix)
+//	if debug {
+//		//configFileName = fmt.Sprintf("./%s-debug.yaml", configFilePrefix)
+//		configFileName = fmt.Sprintf("user_srv/%s-debug.yaml", configFilePrefix)
+//	}
+//	zap.S().Infof("配置文件路径为：%v", configFileName)
+//
+//	v := viper.New()
+//	v.SetConfigFile(configFileName)
+//	if err := v.ReadInConfig(); err != nil {
+//		panic(any(err))
+//	}
+//
+//	// serverConfig对象，其他文件中也要使用配置，所以声明为全局变量
+//	//serverConfig := config.ServerConfig{}
+//	if err := v.Unmarshal(&global.ApolloConfig); err != nil {
+//		panic(any(err))
+//	}
+//	zap.S().Infof("配置信息：%v", global.ApolloConfig)
+//	fmt.Printf("服务名称是：%v", v.Get("name"))
+//
+//	// 从apollo中读取配置
+//	agollo.Start(&agollo.Conf{
+//		AppID:           global.ApolloConfig.AppID,
+//		Cluster:         global.ApolloConfig.Cluster,
+//		NameSpaceNames:  global.ApolloConfig.NameSpaceNames,
+//		MetaAddr:        global.ApolloConfig.MetaAddr,
+//		AccesskeySecret: global.ApolloConfig.AccesskeySecret,
+//	})
+//	log.Println("初始化Apollo配置成功")
+//	namespaceContent := agollo.GetContent(agollo.WithNamespace("user-srv.json"))
+//	log.Println(namespaceContent)
+//	//将从apollo中获取的配置数据绑定到结构体中
+//	fmt.Printf("这是namespaceContent：%v", namespaceContent)
+//	err := json.Unmarshal([]byte(namespaceContent), &global.ServerConfig)
+//	if err != nil {
+//		zap.S().Fatalf("读取nacos配置失败： %s", err.Error())
+//	}
+//	fmt.Println("这是global.ServerConfig", &global.ServerConfig)
+//
+//}

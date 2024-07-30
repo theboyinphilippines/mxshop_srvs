@@ -17,3 +17,12 @@ port: 8848
 namespaceId: 33ca388f-a652-40e1-b98a-df8cb4174367
 dataId: user-srv.json
 group: dev
+
+#appId: 1005784
+#cluster: default
+#nameSpaceNames:
+#  - application.properties
+#  - TEST1.Srv.Namespace.properties
+#  - user-srv.json
+#metaAddr: http://localhost:8080
+#accesskeySecret: 6dbd7a532b9847298d4955639b37aad6

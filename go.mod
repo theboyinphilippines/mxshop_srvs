@@ -29,6 +29,7 @@ require (
 	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/opentracing/opentracing-go v1.2.0
+	github.com/philchia/agollo/v4 v4.1.5
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.3

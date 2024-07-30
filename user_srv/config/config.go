@@ -21,6 +21,14 @@ type NacosConfig struct {
 	Group       string `mapstructure:"group" json:"group"`
 }
 
+type ApolloConfig struct {
+	AppID           string   `mapstructure:"appId" json:"appId"`
+	Cluster         string   `mapstructure:"cluster" json:"cluster"`
+	NameSpaceNames  []string `mapstructure:"nameSpaceNames" json:"nameSpaceNames"`
+	MetaAddr        string   `mapstructure:"metaAddr" json:"metaAddr"`
+	AccesskeySecret string   `mapstructure:"accesskeySecret" json:"accesskeySecret"`
+}
+
 type ServerConfig struct {
 	Host       string       `mapstructure:"host" json:"host"`
 	Name       string       `mapstructure:"name" json:"name"` //注册到consul中的服务名称
