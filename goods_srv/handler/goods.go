@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/olivere/elastic/v7"
 	"github.com/opentracing/opentracing-go"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -302,4 +303,23 @@ func (s *GoodsServer) GetGoodsDetail(ctx context.Context, req *proto.GoodInfoReq
 	}
 	goodsInfoResponse := modelToGoodsResponse(good)
 	return &goodsInfoResponse, nil
+}
+
+// 测试下es的聚合
+func TestESAggs() {
+	q := elastic.NewBoolQuery()
+	q = q.Filter(elastic.NewRangeQuery("market_price").Gte(10).Lte(20))
+	martetPriceAggs := elastic.NewSumAggregation().Field("market_price")
+	builder := global.EsClient.Search().Index(model.EsGoods{}.GetIndexName()).Query(q)
+	builder = builder.Aggregation("martetAggs", martetPriceAggs)
+	searchResult, _ := builder.Pretty(true).Do(context.Background())
+
+	total := searchResult.Hits.TotalHits.Value
+	for _, value := range searchResult.Hits.Hits {
+		zap.S().Infof("这是TestESAggs.value: %v", string(value.Source))
+	}
+	zap.S().Infof("这是TestESAggs.total: %d", total)
+	for _, v := range searchResult.Aggregations {
+		zap.S().Infof("这是TestESAggs.aggs.value: %v", string(v))
+	}
 }

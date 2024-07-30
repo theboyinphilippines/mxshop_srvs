@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"mxshop_srvs/goods_srv/proto"
+	"time"
 )
 
 var brandClient proto.GoodsClient
@@ -23,21 +24,23 @@ func TestGetBrandList() {
 }
 
 func TestGoodsList() {
-	rsp, err := brandClient.GoodsList(context.Background(), &proto.GoodsFilterRequest{
-		PriceMin:    10,
-		PriceMax:    30,
-		Pages:       1,
-		PagePerNums: 8,
-		KeyWords:    "苹果",
-		TopCategory: 130358,
-	})
-	if err != nil {
-		panic(any(err))
+	for {
+		_, err := brandClient.GoodsList(context.Background(), &proto.GoodsFilterRequest{
+			//PriceMin:    10,
+			//PriceMax:    30,
+			//Pages:       1,
+			//PagePerNums: 8,
+			//KeyWords:    "猕猴桃",
+			//TopCategory: 130358,
+		})
+		if err != nil {
+			panic(any(err))
+		}
+		fmt.Println("success")
+		time.Sleep(time.Millisecond * 2)
+
 	}
-	fmt.Println(rsp.Total)
-	for _, goodsInfo := range rsp.Data {
-		fmt.Println(goodsInfo)
-	}
+
 }
 
 func TestGetAllCategoryList() {
@@ -90,7 +93,7 @@ func TestDeleteGoods() {
 	}
 }
 
-func TestCreateGoods() {
+func TestGoodsListTestCreateGoods() {
 	_, err := brandClient.CreateGoods(context.Background(), &proto.CreateGoodsInfo{
 		Name:            "妈妈们",
 		GoodsSn:         "sdsd",
@@ -125,7 +128,7 @@ func main() {
 	Init()
 	//TestGetBrandList()
 	//TestGetAllCategoryList()
-	//TestGoodsList()
+	TestGoodsList()
 	//TestBatchGetGoods()
 	//TestGetGoodsDetail()
 	//TestUpdateGoods()

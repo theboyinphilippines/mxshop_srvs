@@ -29,6 +29,10 @@ func main() {
 	initialize.InitLogger()
 	initialize.InitConfig()
 	initialize.InitDB()
+	go func() {
+		initialize.InitCron() //初始化定时任务,阻塞的
+	}()
+
 	zap.S().Info("全局配置是:", global.ServerConfig)
 
 	flag.Parse()

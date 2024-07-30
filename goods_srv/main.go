@@ -123,6 +123,9 @@ func main() {
 	//}
 	//zap.S().Info("注销成功")
 
+	//测试下es的聚合
+	handler.TestESAggs()
+
 	//服务注册到consul中
 	registerClient := consul.NewRegistryClient(global.ServerConfig.ConsulInfo.Host,
 		global.ServerConfig.ConsulInfo.Port)

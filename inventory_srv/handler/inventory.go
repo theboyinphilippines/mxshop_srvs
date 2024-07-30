@@ -229,7 +229,7 @@ func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*empty
 
 	var goodInfos = GoodsDetailList(req.GoodsInfo)
 	sort.Sort(goodInfos)
-	zap.S().Infof("这是goodInfos：%v", goodInfos)
+	//zap.S().Infof("这是goodInfos：%v", goodInfos)
 	req.GoodsInfo = goodInfos
 
 	client := goredislib.NewClient(&goredislib.Options{
@@ -259,10 +259,9 @@ func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*empty
 				//_, _ = mutex.Unlock()
 				if mutexs != nil {
 					for _, mu := range mutexs {
-						if ok, err := mu.Unlock(); !ok || err != nil {
-							return
-						}
+						_, _ = mu.Unlock()
 					}
+					return
 				}
 				return
 			}
@@ -305,6 +304,7 @@ func (i *InventoryServer) Sell(ctx context.Context, req *proto.SellInfo) (*empty
 	//手动提交事务
 	tx.Commit()
 
+	panic("Panic test")
 	//只能commit往数据库提交数据后，才能释放锁
 	for _, mutex := range mutexs {
 		if ok, err := mutex.Unlock(); !ok || err != nil {
