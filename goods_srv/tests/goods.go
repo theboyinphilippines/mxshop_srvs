@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"mxshop_srvs/goods_srv/proto"
 	"time"
 )
@@ -24,8 +25,15 @@ func TestGetBrandList() {
 }
 
 func TestGoodsList() {
+	//md := metadata.New(map[string]string{
+	//	"username":     "john",
+	//	"x-request-id": "12345",
+	//})
+	//客户端发送metadata
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "username", "john",
+		"x-request-id", "12345")
 	for {
-		_, err := brandClient.GoodsList(context.Background(), &proto.GoodsFilterRequest{
+		_, err := brandClient.GoodsList(ctx, &proto.GoodsFilterRequest{
 			//PriceMin:    10,
 			//PriceMax:    30,
 			//Pages:       1,

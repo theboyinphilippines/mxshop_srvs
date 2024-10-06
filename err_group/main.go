@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+
 	eg, ctx := errgroup.WithContext(context.Background())
 	// 5秒后抛出错误，ctx会cancel
 	eg.Go(func() error {

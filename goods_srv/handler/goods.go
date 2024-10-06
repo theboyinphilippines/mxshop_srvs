@@ -9,6 +9,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/gorm"
@@ -61,6 +62,14 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 	//es用来做搜索，这个时候我们一般只把搜索和过滤的字段信息保存到es中
 	//es可以用来当做mysql使用， 但是实际上mysql和es之间是互补的关系， 一般mysql用来做存储使用，es用来做搜索使用
 	//es想要提高性能， 就要将es的内存设置的够大， 或写入少点字段1k 2k
+
+	// 读取请求metadata
+	md, _ := metadata.FromIncomingContext(ctx)
+	for k, v := range md {
+		for _, v1 := range v {
+			zap.S().Infof("k is %v, v is %v", k, v1)
+		}
+	}
 
 	var goodsListResponse proto.GoodsListResponse
 	// 条件搜索
